@@ -495,10 +495,7 @@ def knn_255(df,n_columnas,k_vecinos):
     print('----------------\n')
 
 
-
-
 #-----------------------------------------------------------
-
 
 
 #%%
@@ -541,33 +538,6 @@ def arbol(df,profundidades):
     print('--------------------------\n')
 
 
-
-
-#plt.figure(figsize= [20,10])
-#tree.plot_tree(clf_info, feature_names = ['altura_tot', 'diametro', 'inclinacio'], class_names = ['Ceibo', 'Eucalipto', 'Jacarandá', 'Pindó'],filled = True, rounded = True, fontsize = 8)
-#
-#plt.figure(figsize= [15,10])
-#tree.plot_tree(clf_info, feature_names = iris['feature_names'], class_names = iris['target_names'],filled = True, rounded = True, fontsize = 10)
-#
-#r = tree.export_text(clf_info, feature_names=iris['feature_names'])
-#print(r)
-#
-#
-#clf_info = tree.DecisionTreeClassifier(criterion = "entropy", max_depth= 4)
-#clf_info = clf_info.fit(X, Y)
-#
-#
-##%%
-#
-#datonuevo= pd.DataFrame([dict(zip(['altura_tot', 'diametro', 'inclinacio'], [22,56,8]))])
-#clf_info.predict(datonuevo)
-#
-#
-##%%
-## otra forma de ver el arbol
-#r = tree.export_text(clf_info, feature_names=['altura_tot', 'diametro', 'inclinacio'])
-#print(r)
-#
 #--------------------------------------------------------------------------------
 
 
