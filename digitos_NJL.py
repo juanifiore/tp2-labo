@@ -425,6 +425,7 @@ plt.show()
 
 # viendo que las mejores columnas son las de mas cantidad de pixeles de 255, hago analisis sobre esto en busca de la mejor clasificacion con knn
 # buscaremos la mejor combinacion entre cantidad de columnas y cantidad de vecinos y veremos las relaciones a partir de un mapa de calor
+# a la funcion se le pasa el DF de las imagenes, la lista de cantidades de columnas, la cantidad de vecinos, la cantidad de iteraciones de testeo
 
 def mejor_modelo_255(img_0_1,columnas,k,i):
     n_columnas = columnas
@@ -477,13 +478,17 @@ def mejor_modelo_255(img_0_1,columnas,k,i):
 
 #    return resultados_test_255
 
-#-----------------------------------------------------------
-# funcion de modelo KNN usando n columnas con mayor cantidad de pixeles 255
+print('\nFuncion mejor_modelo_255(img_0_1,columnas,k,i)')
 
-def knn_255(df,n_columnas,k_vecinos):
-    df_255 = n_col_mas_255(df,n_columnas)
-    PIXELES = df_255.iloc[:,1:]
-    DIGITO = df_255[0]
+#-----------------------------------------------------------
+# funcion de modelo KNN, se le pasa como parametro el DF de las imagenes, las cantidad de columnas,
+# la cantidad de vecinos, y la funcion con la que se seleccionan la cantidad de columnas (azar, menos ceros, mas cantidad de 255,...)
+# la cantidad de columnas es fija
+
+def knn_255(img,cant_columnas,k_vecinos,funcion_columnas):
+    img_columnas_selec = funcion_columnas(img,cant_columnas)
+    PIXELES = img_columnas_selec.iloc[:,1:]
+    DIGITO = img_columnas_selec[0]
     PIXELES_train, PIXELES_test, DIGITO_train, DIGITO_test = train_test_split(PIXELES,DIGITO, test_size = 0.3)
     model = KNeighborsClassifier(n_neighbors = k_vecinos)
     model.fit(PIXELES_train, DIGITO_train)
@@ -493,6 +498,34 @@ def knn_255(df,n_columnas,k_vecinos):
     print('----------------\nMatriz de confusion\n')
     print(metrics.confusion_matrix(DIGITO_test, PREDICCIONES))
     print('----------------\n')
+    return model
+
+
+# funcion que grafica la relacion entre la cantidad de columnas y la precision, pasandole tambien
+# como parametro a la funcion con la que se seleccionan las columnas (azar, menos ceros, mas cantidad de 255,...)
+# las columnas se pasan en forma de lista, cada elemento es una cantidad de columnas a analizar
+
+def relacion_cant_columnas_precision(img,cant_columnas,funcion_columnas,k_vecinos):
+    for k in k_vecinos:
+        precisiones = [] 
+        for n in cant_columnas:
+            img_columnas_selec = funcion_columnas(img,n)
+            PIXELES = img_columnas_selec.iloc[:,1:]
+            DIGITO = img_columnas_selec[0]
+            PIXELES_train, PIXELES_test, DIGITO_train, DIGITO_test = train_test_split(PIXELES,DIGITO, test_size = 0.3)
+            model = KNeighborsClassifier(n_neighbors = k)
+            model.fit(PIXELES_train, DIGITO_train)
+            PREDICCIONES = model.predict(PIXELES_test)
+            precision = metrics.accuracy_score(DIGITO_test, PREDICCIONES)
+            precisiones.append(precision)
+        plt.scatter(cant_columnas,precisiones,label=str(k)+' vecinos')
+    plt.title('Relacion entre cantidad de columnas, vecinos y precision')
+    plt.xlabel('Cantidad de columnas')
+    plt.ylabel('Precision')
+    plt.legend(loc='lower right')
+    plt.show()
+
+
 
 
 #-----------------------------------------------------------
@@ -536,6 +569,8 @@ def arbol(df,profundidades):
     print('Matriz de confusion:\n')
     print(matriz)
     print('--------------------------\n')
+
+print('\nFuncion arbol(df,profundidades)\n')
 
 
 #--------------------------------------------------------------------------------
