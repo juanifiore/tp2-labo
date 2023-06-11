@@ -15,6 +15,7 @@ import seaborn as sns
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
+from sklearn import tree
 
 
 #%%
@@ -23,11 +24,11 @@ df_img = pd.read_csv('mnist_desarrollo.csv',header=None)
 df_img.columns = range(df_img.shape[1])
 
 #%%
-#================================================================================
+#==================================================================================
 # EJERCICIO 1
-#================================================================================
+#==================================================================================
 
-print('\n=======================================\nEJERCICIO 1\n=======================================\n')
+print('\n====================================================\nEJERCICIO 1\n====================================================\n')
 
 # 1. Realizar un análisis exploratorio de los datos. Ver, entre otras cosas,
 # cantidad de datos, cantidad y tipos de atributos, cantidad de clases de la
@@ -68,11 +69,11 @@ print()
 
 
 #%%
-#================================================================================
+#==================================================================================
 # EJERCICIO 2
-#================================================================================
+#==================================================================================
 
-print('\n=======================================\nEJERCICIO 2\n=======================================\n')
+print('\n====================================================\nEJERCICIO 2\n====================================================\n')
 
 # 2. Construir un dataframe con el subconjunto que contiene solamente los
 # dígitos 0 y 1.
@@ -84,11 +85,11 @@ img_0_1 = df_img[(df_img[0] == 0) | (df_img[0] == 1)]
 #--------------------------------------------------------------------------------
 
 #%%
-#================================================================================
+#==================================================================================
 # EJERCICIO 3
-#================================================================================
+#==================================================================================
 
-print('\n=======================================\nEJERCICIO 3\n=======================================\n')
+print('\n====================================================\nEJERCICIO 3\n====================================================\n')
 
 # 3. Para este subconjunto de datos, ver cuántas muestras se tienen y
 # determinar si está balanceado entre las clases.
@@ -125,11 +126,11 @@ print()
 
 
 #%%
-#================================================================================
+#==================================================================================
 # EJERCICIO 4
-#================================================================================
+#==================================================================================
 
-print('\n=======================================\nEJERCICIO 4\n=======================================\n')
+print('\n====================================================\nEJERCICIO 4\n====================================================\n')
 
 # 4. Ajustar un modelo de knn considerando pocos atributos, por ejemplo 3.
 # Probar con distintos conjuntos de 3 atributos y comparar resultados.
@@ -153,34 +154,34 @@ print('\n=======================================\nEJERCICIO 4\n=================
 # al azar
 def n_col_al_azar(img,n):
     indices_al_azar = np.random.randint(1, 785, size=n)
-    col_al_azar = img_0_1.iloc[:,np.insert(indices_al_azar,0,0)]
+    col_al_azar = img.iloc[:,np.insert(indices_al_azar,0,0)]
     return col_al_azar
 
 # menos cantidad de ceros
 def n_col_menos_ceros(img,n):
-    cantidades_de_ceros = (img_0_1.iloc[:,1:]==0).sum()
+    cantidades_de_ceros = (img.iloc[:,1:]==0).sum()
     indices_n_columnas_menos_ceros = cantidades_de_ceros.sort_values().index[:n]
-    col_menos_ceros = img_0_1[np.insert(indices_n_columnas_menos_ceros,0,0)]    # le agrego la columna 0
+    col_menos_ceros = img[np.insert(indices_n_columnas_menos_ceros,0,0)]    # le agrego la columna 0
     return col_menos_ceros
 
-# equidistantes (n columnas que parten los array en (n+1) partes iguales)
+# equidistantes (n columnas que parten las imagenes en (n+1) partes iguales)
 def n_col_equi_dist(img,n):
     indices_equi_dist = np.arange(784/(n+1), 784, np.ceil(784/(n+1)),dtype=int)
-    col_equi_dist = img_0_1[np.insert(indices_equi_dist,0,0)]   # le agrego la columna 0 
+    col_equi_dist = img[np.insert(indices_equi_dist,0,0)]   # le agrego la columna 0 
     return col_equi_dist
 
 # columnas que mas tienen el 253
 def n_col_mas_253(img,n):
-    cantidades_de_253 = (img_0_1.iloc[:,1:]==253).sum()
+    cantidades_de_253 = (img.iloc[:,1:]==253).sum()
     indices_n_columnas_mas_253 = cantidades_de_253.sort_values(ascending=False).index[:n]
-    col_mas_253 = img_0_1[np.insert(indices_n_columnas_mas_253,0,0)]    # le agrego la columna 0
+    col_mas_253 = img[np.insert(indices_n_columnas_mas_253,0,0)]    # le agrego la columna 0
     return col_mas_253
 
 # columnas que mas tienen el 255
 def n_col_mas_255(img,n):
-    cantidades_de_255 = (img_0_1.iloc[:,1:]==255).sum()
+    cantidades_de_255 = (img.iloc[:,1:]==255).sum()
     indices_n_columnas_mas_255 = cantidades_de_255.sort_values(ascending=False).index[:n]
-    col_mas_255 = img_0_1[np.insert(indices_n_columnas_mas_255,0,0)]    # le agrego la columna 0
+    col_mas_255 = img[np.insert(indices_n_columnas_mas_255,0,0)]    # le agrego la columna 0
     return col_mas_255
 
 
@@ -285,11 +286,11 @@ print('----------------\n')
 #--------------------------------------------------------------------------------
 
 #%%
-#================================================================================
+#==================================================================================
 # EJERCICIO 5
-#================================================================================
+#==================================================================================
 
-print('\n=======================================\nEJERCICIO 5\n=======================================\n')
+print('\n====================================================\nEJERCICIO 5\n====================================================\n')
 
 # 5. Para comparar modelos, utilizar validación cruzada. Comparar modelos
 # con distintos atributos y con distintos valores de k (vecinos). Para el análisis
@@ -301,8 +302,8 @@ print('\n=======================================\nEJERCICIO 5\n=================
 
 n=3
 
-# armo los nuevos dataframe con n columnas, pero unicamente de los equidistantes y menos ceros,
-# el de columnas al azar lo genero dentro del ciclo, para poder analizar mejor el 'azar'.
+# armo los nuevos dataframe con n columnas 
+# el de columnas al azar lo genero dentro del ciclo, para poder analizar mejor el "azar".
 # se generara un nuevo DF de columnas al azar por cada iteracion dada por 'Nrep'.
 
 col_menos_ceros = n_col_menos_ceros(img_0_1,n)
@@ -343,7 +344,7 @@ for i in range(Nrep):
     X_train_equi, X_test_equi, Y_train_equi, Y_test_equi = train_test_split(PIXELES_equi,DIGITO_equi, test_size = 0.3)
     X_train_ceros, X_test_ceros, Y_train_ceros, Y_test_ceros = train_test_split(PIXELES_ceros,DIGITO_ceros, test_size = 0.3)
     X_train_253, X_test_253, Y_train_253, Y_test_253 = train_test_split(PIXELES_253,DIGITO_253, test_size = 0.3)
-    X_train_255, X_test_255, Y_train_255, Y_test_255 = train_test_split(PIXELES_255,DIGITO_255, test_size = 0.5)
+    X_train_255, X_test_255, Y_train_255, Y_test_255 = train_test_split(PIXELES_255,DIGITO_255, test_size = 0.3)
     for k in valores_k:
 #        # modelo para columnas al azar
 #        model_azar = KNeighborsClassifier(n_neighbors = k)
@@ -422,8 +423,8 @@ plt.show()
 
 #--------------------------------------------------------------------------------
 
-# viendo que claramente las mejores columnas son las de mas 255, hago analisis sobre esto en busca de la mejor clasificacion con knn
-# buscare la mejor combinacion entre cantidad de columnas y cantidad de vecinos
+# viendo que las mejores columnas son las de mas cantidad de pixeles de 255, hago analisis sobre esto en busca de la mejor clasificacion con knn
+# buscaremos la mejor combinacion entre cantidad de columnas y cantidad de vecinos y veremos las relaciones a partir de un mapa de calor
 
 def mejor_modelo_255(img_0_1,columnas,k,i):
     n_columnas = columnas
@@ -432,14 +433,14 @@ def mejor_modelo_255(img_0_1,columnas,k,i):
     
     resultados_test_255 = np.zeros((i_rep,len(n_columnas), len(valores_k)))
     
-    j = -1
+    j = -1  # lo voy a usar para asignar en la posicion j de la matriz
     for n in n_columnas:
         j += 1
         col_mas_255 = n_col_mas_255(img_0_1,n)
         PIXELES_255 = col_mas_255.iloc[:,1:]
         DIGITO_255 = col_mas_255[0]
         for i in range(i_rep):
-            X_train_255, X_test_255, Y_train_255, Y_test_255 = train_test_split(PIXELES_255,DIGITO_255, test_size = 0.5)
+            X_train_255, X_test_255, Y_train_255, Y_test_255 = train_test_split(PIXELES_255,DIGITO_255, test_size = 0.3)
             for k in k_vecinos:
                 model_255 = KNeighborsClassifier(n_neighbors = k)
                 model_255.fit(X_train_255, Y_train_255)
@@ -449,25 +450,63 @@ def mejor_modelo_255(img_0_1,columnas,k,i):
 
     promedio_precisiones = np.mean(resultados_test_255,axis=0)
 
+    mayor_precision = np.max(promedio_precisiones)
+    print('\nMayor precision alcanzada: ',mayor_precision)
+    print()
+    columnas_mayor_precision,vecinos_mayor_precision = np.unravel_index(np.argmax(promedio_precisiones), promedio_precisiones.shape)
+    print('Mejor combinacion entre cantidad de columnas y vecinos:\n')
+    print('Cantidad de columnas: ',n_columnas[columnas_mayor_precision],'\nCantidad de vecinos: ',vecinos_mayor_precision+1)
+
+    # hago modelo con esos parametros para ver la matriz de confusion
+    col_mas_255 = n_col_mas_255(img_0_1,n_columnas[columnas_mayor_precision])
+    PIXELES_255 = col_mas_255.iloc[:,1:]
+    DIGITO_255 = col_mas_255[0]
+    X_train_255, X_test_255, Y_train_255, Y_test_255 = train_test_split(PIXELES_255,DIGITO_255, test_size = 0.3)
+    model_255 = KNeighborsClassifier(n_neighbors = vecinos_mayor_precision+1)
+    model_255.fit(X_train_255, Y_train_255)
+    predicciones_test_255 = model_255.predict(X_test_255)
+    print('\nMatriz de confusion para esos parametros:\n',metrics.confusion_matrix(Y_test_255,predicciones_test_255))
+    print('\nPrecision: ',metrics.accuracy_score(Y_test_255,predicciones_test_255),'\n')
+
+
     sns.heatmap(promedio_precisiones, xticklabels=k_vecinos, yticklabels=n_columnas)
     plt.xlabel('Cantidad de vecinos')
     plt.ylabel('Cantidad de columnas')
-    plt.title('Precisión del modelo para diferentes combinaciones de columnas y vecinos')
+    plt.title('Precision del modelo para diferentes combinaciones de columnas y vecinos')
     plt.show()
+
 #    return resultados_test_255
 
+#-----------------------------------------------------------
+# funcion de modelo KNN usando n columnas con mayor cantidad de pixeles 255
+
+def knn_255(df,n_columnas,k_vecinos):
+    df_255 = n_col_mas_255(df,n_columnas)
+    PIXELES = df_255.iloc[:,1:]
+    DIGITO = df_255[0]
+    PIXELES_train, PIXELES_test, DIGITO_train, DIGITO_test = train_test_split(PIXELES,DIGITO, test_size = 0.3)
+    model = KNeighborsClassifier(n_neighbors = k_vecinos)
+    model.fit(PIXELES_train, DIGITO_train)
+    PREDICCIONES = model.predict(PIXELES_test)
+    print('----------------\nPrecision: \n')
+    print(metrics.accuracy_score(DIGITO_test, PREDICCIONES))
+    print('----------------\nMatriz de confusion\n')
+    print(metrics.confusion_matrix(DIGITO_test, PREDICCIONES))
+    print('----------------\n')
 
 
 
+
+#-----------------------------------------------------------
 
 
 
 #%%
-#================================================================================
+#==================================================================================
 # EJERCICIO 6
-#================================================================================
+#==================================================================================
 
-print('\n=======================================\nEJERCICIO 6\n=======================================\n')
+print('\n====================================================\nEJERCICIO 6\n====================================================\n')
 
 # 6. Trabajar nuevamente con el dataset de todos los dígitos. Ajustar un
 # modelo de árbol de decisión. Analizar distintas profundidades.
@@ -475,21 +514,102 @@ print('\n=======================================\nEJERCICIO 6\n=================
 #--------------------------------------------------------------------------------
 
 
+def arbol(df,profundidades):
+    PIXELES = df.iloc[:,1:]
+    DIGITO = df[0]
+    profundidad_mas_eficiente = 0
+    mejor_precision = 0
+    matriz = np.zeros((10,10))
+    for p in profundidades:
+        arbol = tree.DecisionTreeClassifier(criterion = "entropy", max_depth= p)
+        arbol = arbol.fit(PIXELES, DIGITO)
 
+        PREDICCIONES = arbol.predict(PIXELES) 
+
+        precision = metrics.accuracy_score(DIGITO,PREDICCIONES)
+        
+        if precision > mejor_precision:
+            mejor_precision = precision
+            profundidad_mas_eficiente = p
+            matriz = metrics.confusion_matrix(DIGITO,PREDICCIONES)
+
+    print('--------------------------\n')
+    print('Mejor profundidad: ',profundidad_mas_eficiente,'\n')
+    print('Precision: ',mejor_precision,'\n')
+    print('Matriz de confusion:\n')
+    print(matriz)
+    print('--------------------------\n')
+
+
+
+
+#plt.figure(figsize= [20,10])
+#tree.plot_tree(clf_info, feature_names = ['altura_tot', 'diametro', 'inclinacio'], class_names = ['Ceibo', 'Eucalipto', 'Jacarandá', 'Pindó'],filled = True, rounded = True, fontsize = 8)
+#
+#plt.figure(figsize= [15,10])
+#tree.plot_tree(clf_info, feature_names = iris['feature_names'], class_names = iris['target_names'],filled = True, rounded = True, fontsize = 10)
+#
+#r = tree.export_text(clf_info, feature_names=iris['feature_names'])
+#print(r)
+#
+#
+#clf_info = tree.DecisionTreeClassifier(criterion = "entropy", max_depth= 4)
+#clf_info = clf_info.fit(X, Y)
+#
+#
+##%%
+#
+#datonuevo= pd.DataFrame([dict(zip(['altura_tot', 'diametro', 'inclinacio'], [22,56,8]))])
+#clf_info.predict(datonuevo)
+#
+#
+##%%
+## otra forma de ver el arbol
+#r = tree.export_text(clf_info, feature_names=['altura_tot', 'diametro', 'inclinacio'])
+#print(r)
+#
 #--------------------------------------------------------------------------------
 
 
 #%%
-#================================================================================
+#==================================================================================
 # EJERCICIO 7
-#================================================================================
+#==================================================================================
 
-print('\n=======================================\nEJERCICIO 7\n=======================================\n')
+print('\n====================================================\nEJERCICIO 7\n====================================================\n')
 
 # 7. Para comparar y seleccionar los árboles de decisión, utilizar validación
 # cruzada con k-folding.
 
 #--------------------------------------------------------------------------------
+
+def arbol(df,profundidades):
+    PIXELES = df.iloc[:,1:]
+    DIGITO = df[0]
+    profundidad_mas_eficiente = 0
+    mejor_precision = 0
+    matriz = np.zeros((10,10))
+    for p in profundidades:
+        PIXELES_train, PIXELES_test, DIGITO_train, DIGITO_test = train_test_split(PIXELES,DIGITO, test_size = 0.3)
+        arbol = tree.DecisionTreeClassifier(criterion = "entropy", max_depth= p)
+        arbol = arbol.fit(PIXELES_train, DIGITO_train)
+
+        PREDICCIONES = arbol.predict(PIXELES_test) 
+
+        precision = metrics.accuracy_score(DIGITO_test, PREDICCIONES)
+        
+        if precision > mejor_precision:
+            mejor_precision = precision
+            profundidad_mas_eficiente = p
+            matriz = metrics.confusion_matrix(DIGITO_test,PREDICCIONES)
+
+    print('--------------------------\n')
+    print('Mejor profundidad: ',profundidad_mas_eficiente,'\n')
+    print('Precision: ',mejor_precision,'\n')
+    print('Matriz de confusion:\n')
+    print(matriz)
+    print('--------------------------\n')
+
 
 
 
