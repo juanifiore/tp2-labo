@@ -4,7 +4,7 @@ Grupo NJL: Falczuk Noelia, Sanes Salazar Luna, Fiore Juan Ignacio
 
 El codigo implementara funciones de la libreria SKLearn para intentar lograr una clasificacion
 de imagenes de numeros escritos a mano. Utilizando el csv mnist_desarrollo.csv que contiene un 
-conjunto de 
+conjunto de 60000 imagenes.
 
 '''
 
@@ -59,15 +59,10 @@ print(proporciones_de_imagenes_por_numero)
 print()
 
 # graficamos la cantidad en un barplot con el promedio
-sns.barplot(x='numero',y='cantidad',data=pd.DataFrame({'numero': cantidad_de_imagenes_por_numero.index, 'cantidad': cantidad_de_imagenes_por_numero.values}))
-plt.axhline(cantidad_de_imagenes_por_numero.mean(), color='red', linestyle='--')
-plt.show()
-plt.close()
-
-
-#--------------------------------------------------------------------------------
-
-#--------------------------------------------------------------------------------
+#sns.barplot(x='numero',y='cantidad',data=pd.DataFrame({'numero': cantidad_de_imagenes_por_numero.index, 'cantidad': cantidad_de_imagenes_por_numero.values}))
+#plt.axhline(cantidad_de_imagenes_por_numero.mean(), color='red', linestyle='--')
+#plt.show()
+#plt.close()
 
 #--------------------------------------------------------------------------------
 
@@ -119,6 +114,12 @@ print("Las proporciones por digito son: ")
 print(proporciones_de_imagenes_0_1*100)
 print()
 
+# graficamos la cantidad en un barplot con el promedio
+#sns.barplot(x='numero',y='cantidad',data=pd.DataFrame({'numero': cantidad_de_imagenes_0_1.index, 'cantidad': cantidad_de_imagenes_0_1.values}))
+#plt.axhline(cantidad_de_imagenes_0_1.mean(), color='red', linestyle='--')
+#plt.show()
+#plt.close()
+
 
 #--------------------------------------------------------------------------------
 
@@ -138,6 +139,16 @@ print('\n=======================================\nEJERCICIO 4\n=================
 
 # armaremos nuevos dataframe que contengan solo n atributos (pixeles o columnas)
 # primero n al azar, luego n equidistantes, y luego las n columnas que contengan mayor cantidad de datos distintos de cero
+# tambien para probar, viendo que el elemento que mas aparece es el 253, tomo las n columnas que mas contengan a ese numero
+# y otro con el 255, que es el color mas fuerte de la imagen
+
+# estos son los 6 elementos que mas aparecen en el df img_0_1 y la cantidad de apariciones
+#0      8219442
+#253     345742
+#252     138242
+#254     122271
+#255      65771
+
 
 # al azar
 def n_col_al_azar(img,n):
@@ -158,21 +169,76 @@ def n_col_equi_dist(img,n):
     col_equi_dist = img_0_1[np.insert(indices_equi_dist,0,0)]   # le agrego la columna 0 
     return col_equi_dist
 
-n=10
+# columnas que mas tienen el 253
+def n_col_mas_253(img,n):
+    cantidades_de_253 = (img_0_1.iloc[:,1:]==253).sum()
+    indices_n_columnas_mas_253 = cantidades_de_253.sort_values(ascending=False).index[:n]
+    col_mas_253 = img_0_1[np.insert(indices_n_columnas_mas_253,0,0)]    # le agrego la columna 0
+    return col_mas_253
+
+# columnas que mas tienen el 255
+def n_col_mas_255(img,n):
+    cantidades_de_255 = (img_0_1.iloc[:,1:]==255).sum()
+    indices_n_columnas_mas_255 = cantidades_de_255.sort_values(ascending=False).index[:n]
+    col_mas_255 = img_0_1[np.insert(indices_n_columnas_mas_255,0,0)]    # le agrego la columna 0
+    return col_mas_255
+
+
+
+#--------------------------------------------------------------------------------
+#%%
+
+
+n=3
 
 col_al_azar = n_col_al_azar(img_0_1,n)
 col_menos_ceros = n_col_menos_ceros(img_0_1,n)
 col_equi_dist = n_col_equi_dist(img_0_1,n)
+col_mas_253 = n_col_mas_253(img_0_1,n)
+col_mas_255 = n_col_mas_255(img_0_1,n)
 
+k = 5
+
+print('----------\nNumero de columnas: ',n,'\nNumero de vecinos: ',k,'\n-----------\n')
 
 #--------------------------------------------------------------------------------
-
-k = 8
 
 print('=========================\nEntrenamiento KNN con columnas de menos ceros\n=========================')
 
 PIXELES = col_menos_ceros.iloc[:,1:]
 DIGITO = col_menos_ceros[0]
+
+model = KNeighborsClassifier(n_neighbors = k) # modelo en abstracto
+model.fit(PIXELES, DIGITO) # entreno el modelo con los datos PIXELES y DIGITO
+PREDICCIONES = model.predict(PIXELES) # me fijo qué clases les asigna el modelo a mis datos
+print('----------------\nPrecision: \n')
+print(metrics.accuracy_score(DIGITO, PREDICCIONES))
+print('----------------\nMatriz de confusion\n')
+print(metrics.confusion_matrix(DIGITO, PREDICCIONES))
+print('----------------\n')
+
+#--------------------------------------------------------------------------------
+
+print('=========================\nEntrenamiento KNN con columnas de mas 253 \n=========================')
+
+PIXELES = col_mas_253.iloc[:,1:]
+DIGITO = col_mas_253[0]
+
+model = KNeighborsClassifier(n_neighbors = k) # modelo en abstracto
+model.fit(PIXELES, DIGITO) # entreno el modelo con los datos PIXELES y DIGITO
+PREDICCIONES = model.predict(PIXELES) # me fijo qué clases les asigna el modelo a mis datos
+print('----------------\nPrecision: \n')
+print(metrics.accuracy_score(DIGITO, PREDICCIONES))
+print('----------------\nMatriz de confusion\n')
+print(metrics.confusion_matrix(DIGITO, PREDICCIONES))
+print('----------------\n')
+
+#--------------------------------------------------------------------------------
+
+print('=========================\nEntrenamiento KNN con columnas de mas 255 \n=========================')
+
+PIXELES = col_mas_255.iloc[:,1:]
+DIGITO = col_mas_255[0]
 
 model = KNeighborsClassifier(n_neighbors = k) # modelo en abstracto
 model.fit(PIXELES, DIGITO) # entreno el modelo con los datos PIXELES y DIGITO
@@ -233,8 +299,167 @@ print('\n=======================================\nEJERCICIO 5\n=================
 #--------------------------------------------------------------------------------
 
 
+n=3
+
+# armo los nuevos dataframe con n columnas, pero unicamente de los equidistantes y menos ceros,
+# el de columnas al azar lo genero dentro del ciclo, para poder analizar mejor el 'azar'.
+# se generara un nuevo DF de columnas al azar por cada iteracion dada por 'Nrep'.
+
+col_menos_ceros = n_col_menos_ceros(img_0_1,n)
+col_equi_dist = n_col_equi_dist(img_0_1,n)
+col_mas_253 = n_col_mas_253(img_0_1,n)
+col_mas_255 = n_col_mas_255(img_0_1,n)
+
+PIXELES_equi = col_equi_dist.iloc[:,1:]
+DIGITO_equi = col_equi_dist[0]
+PIXELES_ceros = col_menos_ceros.iloc[:,1:]
+DIGITO_ceros = col_menos_ceros[0]
+PIXELES_253 = col_mas_253.iloc[:,1:]
+DIGITO_253 = col_mas_253[0]
+PIXELES_255 = col_mas_255.iloc[:,1:]
+DIGITO_255 = col_mas_255[0]
+
+
+Nrep = 0
+valores_k = range(1, 20)
+
+#resultados_test_azar = np.zeros((Nrep, len(valores_k)))
+#resultados_train_azar = np.zeros((Nrep, len(valores_k)))
+resultados_test_equi = np.zeros((Nrep, len(valores_k)))
+#resultados_train_equi = np.zeros((Nrep, len(valores_k)))
+resultados_test_ceros = np.zeros((Nrep, len(valores_k)))
+#resultados_train_ceros = np.zeros((Nrep, len(valores_k)))
+resultados_test_253 = np.zeros((Nrep, len(valores_k)))
+#resultados_train_253 = np.zeros((Nrep, len(valores_k)))
+resultados_test_255 = np.zeros((Nrep, len(valores_k)))
+#resultados_train_255 = np.zeros((Nrep, len(valores_k)))
+
+
+for i in range(Nrep):
+#    col_al_azar = n_col_al_azar(img_0_1,n)
+#    PIXELES_azar = col_al_azar.iloc[:,1:]
+#    DIGITO_azar = col_al_azar[0]
+#    X_train_azar, X_test_azar, Y_train_azar, Y_test_azar = train_test_split(PIXELES_azar,DIGITO_azar, test_size = 0.3)
+    X_train_equi, X_test_equi, Y_train_equi, Y_test_equi = train_test_split(PIXELES_equi,DIGITO_equi, test_size = 0.3)
+    X_train_ceros, X_test_ceros, Y_train_ceros, Y_test_ceros = train_test_split(PIXELES_ceros,DIGITO_ceros, test_size = 0.3)
+    X_train_253, X_test_253, Y_train_253, Y_test_253 = train_test_split(PIXELES_253,DIGITO_253, test_size = 0.3)
+    X_train_255, X_test_255, Y_train_255, Y_test_255 = train_test_split(PIXELES_255,DIGITO_255, test_size = 0.5)
+    for k in valores_k:
+#        # modelo para columnas al azar
+#        model_azar = KNeighborsClassifier(n_neighbors = k)
+#        model_azar.fit(X_train_azar, Y_train_azar)
+#        predicciones_test_azar = model_azar.predict(X_test_azar)
+##        predicciones_train_azar = model.predict(X_train)
+#        precision_test_azar = metrics.accuracy_score(Y_test_azar, predicciones_test_azar)
+##        precision_train_azar = metrics.accuracy_score(Y_train_azar, predicciones_train_azar)
+#        resultados_test_azar[i, k-1] = precision_test_azar
+##        resultados_train_azar[i, k-1] = precision_train_azar
+
+        #mmodelo para columnas equidistantes
+        model_equi = KNeighborsClassifier(n_neighbors = k)
+        model_equi.fit(X_train_equi, Y_train_equi)
+        predicciones_test_equi = model_equi.predict(X_test_equi)
+#        predicciones_train_equi = model.predict(X_train)
+        precision_test_equi = metrics.accuracy_score(Y_test_equi, predicciones_test_equi)
+#        precision_train_equi = metrics.accuracy_score(Y_train_equi, predicciones_train_equi)
+        resultados_test_equi[i, k-1] = precision_test_equi
+#        resultados_train_equi[i, k-1] = precision_train_equi
+
+        #modelo para columnas con menos ceros
+        model_ceros = KNeighborsClassifier(n_neighbors = k)
+        model_ceros.fit(X_train_ceros, Y_train_ceros)
+        predicciones_test_ceros = model_ceros.predict(X_test_ceros)
+#        predicciones_train_ceros = model.predict(X_train)
+        precision_test_ceros = metrics.accuracy_score(Y_test_ceros, predicciones_test_ceros)
+#        precision_train_ceros = metrics.accuracy_score(Y_train_ceros, predicciones_train_ceros)
+        resultados_test_ceros[i, k-1] = precision_test_ceros
+#        resultados_train_ceros[i, k-1] = precision_train_ceros
+
+        #modelo para columnas con mas 253
+        model_253 = KNeighborsClassifier(n_neighbors = k)
+        model_253.fit(X_train_253, Y_train_253)
+        predicciones_test_253 = model_253.predict(X_test_253)
+#        predicciones_train_253 = model.predict(X_train)
+        precision_test_253 = metrics.accuracy_score(Y_test_253, predicciones_test_253)
+#        precision_train_253 = metrics.accuracy_score(Y_train_253, predicciones_train_253)
+        resultados_test_253[i, k-1] = precision_test_253
+#        resultados_train_253[i, k-1] = precision_train_253
+
+        #modelo para columnas con mas 255
+        model_255 = KNeighborsClassifier(n_neighbors = k)
+        model_255.fit(X_train_255, Y_train_255)
+        predicciones_test_255 = model_255.predict(X_test_255)
+#        predicciones_train_255 = model.predict(X_train)
+        precision_test_255 = metrics.accuracy_score(Y_test_255, predicciones_test_255)
+#        precision_train_255 = metrics.accuracy_score(Y_train_255, predicciones_train_255)
+        resultados_test_255[i, k-1] = precision_test_255
+#        resultados_train_255[i, k-1] = precision_train_255
+
+#%%
+
+#promedios_train_azar = np.mean(resultados_train_azar, axis = 0)
+#promedios_test_azar = np.mean(resultados_test_azar, axis = 0)
+#promedios_train_equi = np.mean(resultados_train_equi, axis = 0)
+promedios_test_equi = np.mean(resultados_test_equi, axis = 0)
+#promedios_train_ceros = np.mean(resultados_train_ceros, axis = 0)
+promedios_test_ceros = np.mean(resultados_test_ceros, axis = 0)
+#promedios_train_253 = np.mean(resultados_train_253, axis = 0)
+promedios_test_253 = np.mean(resultados_test_253, axis = 0)
+#promedios_train_255 = np.mean(resultados_train_255, axis = 0)
+promedios_test_255 = np.mean(resultados_test_255, axis = 0)
+#%%
+
+#plt.plot(valores_k, promedios_test_azar, label = 'Columnas al azar')
+plt.plot(valores_k, promedios_test_equi, label = 'Columnas equidistantes')
+plt.plot(valores_k, promedios_test_ceros, label = 'Columnas con menos ceros')
+plt.plot(valores_k, promedios_test_253, label = 'Columnas con mas 253')
+plt.plot(valores_k, promedios_test_255, label = 'Columnas con mas 255')
+plt.legend()
+plt.title('Exactitud del modelo de knn con ' + str(n) + ' columnas')
+plt.xlabel('Cantidad de vecinos')
+plt.ylabel('Exactitud (accuracy)')
+plt.show()
 
 #--------------------------------------------------------------------------------
+
+# viendo que claramente las mejores columnas son las de mas 255, hago analisis sobre esto en busca de la mejor clasificacion con knn
+# buscare la mejor combinacion entre cantidad de columnas y cantidad de vecinos
+
+def mejor_modelo_255(img_0_1,columnas,k,i):
+    n_columnas = columnas
+    k_vecinos = np.arange(1,k)
+    i_rep = i
+    
+    resultados_test_255 = np.zeros((i_rep,len(n_columnas), len(valores_k)))
+    
+    j = -1
+    for n in n_columnas:
+        j += 1
+        col_mas_255 = n_col_mas_255(img_0_1,n)
+        PIXELES_255 = col_mas_255.iloc[:,1:]
+        DIGITO_255 = col_mas_255[0]
+        for i in range(i_rep):
+            X_train_255, X_test_255, Y_train_255, Y_test_255 = train_test_split(PIXELES_255,DIGITO_255, test_size = 0.5)
+            for k in k_vecinos:
+                model_255 = KNeighborsClassifier(n_neighbors = k)
+                model_255.fit(X_train_255, Y_train_255)
+                predicciones_test_255 = model_255.predict(X_test_255)
+                precision_test_255 = metrics.accuracy_score(Y_test_255, predicciones_test_255)
+                resultados_test_255[i,j,k-1] = precision_test_255
+
+    promedio_precisiones = np.mean(resultados_test_255,axis=0)
+
+    sns.heatmap(promedio_precisiones, xticklabels=k_vecinos, yticklabels=n_columnas)
+    plt.xlabel('Cantidad de vecinos')
+    plt.ylabel('Cantidad de columnas')
+    plt.title('Precisión del modelo para diferentes combinaciones de columnas y vecinos')
+    plt.show()
+#    return resultados_test_255
+
+
+
+
+
 
 
 #%%
