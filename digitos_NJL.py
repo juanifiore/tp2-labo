@@ -184,6 +184,18 @@ def n_col_mas_255(img,n):
     col_mas_255 = img[np.insert(indices_n_columnas_mas_255,0,0)]    # le agrego la columna 0
     return col_mas_255
 
+def n_col_mas_var(img,n):
+    varianzas = np.var(img, axis=0)
+    indices_n_columnas_mas_var = varianzas.sort_values(ascending=False).index[:n]
+    col_mas_var = img[np.insert(indices_n_columnas_mas_var,0,0)]    # le agrego la columna 0
+    return col_mas_var 
+
+def n_col_mas_norma2(img,n):
+    norma2 = np.linalg.norm(img, axis=0)
+    indices_n_columnas_mas_norma2 = np.argsort(np.linalg.norm(img_0_1,axis=0))[-n:]
+    col_mas_norma2 = img[np.insert(indices_n_columnas_mas_norma2,0,0)]    # le agrego la columna 0
+    return col_mas_norma2 
+
 
 
 #--------------------------------------------------------------------------------
@@ -197,6 +209,8 @@ col_menos_ceros = n_col_menos_ceros(img_0_1,n)
 col_equi_dist = n_col_equi_dist(img_0_1,n)
 col_mas_253 = n_col_mas_253(img_0_1,n)
 col_mas_255 = n_col_mas_255(img_0_1,n)
+col_mas_var = n_col_mas_var(img_0_1,n)
+col_mas_norma2 = n_col_mas_norma2(img_0_1,n)
 
 k = 5
 
@@ -282,6 +296,40 @@ print('----------------\nMatriz de confusion\n')
 print(metrics.confusion_matrix(DIGITO, PREDICCIONES))
 print('----------------\n')
 
+#--------------------------------------------------------------------------------
+
+print('=========================\nEntrenamiento KNN con columnas de mas varianza\n=========================')
+
+PIXELES = col_mas_var.iloc[:,1:]
+DIGITO = col_mas_var[0]
+
+model = KNeighborsClassifier(n_neighbors = k) # modelo en abstracto
+model.fit(PIXELES, DIGITO) # entreno el modelo con los datos PIXELES y DIGITO
+PREDICCIONES = model.predict(PIXELES) # me fijo qué clases les asigna el modelo a mis datos
+print('----------------\nPrecision: \n')
+print(metrics.accuracy_score(DIGITO, PREDICCIONES))
+print('----------------\nMatriz de confusion\n')
+print(metrics.confusion_matrix(DIGITO, PREDICCIONES))
+print('----------------\n')
+
+#--------------------------------------------------------------------------------
+
+print('=========================\nEntrenamiento KNN con columnas de mas norma2\n=========================')
+
+PIXELES = col_mas_norma2.iloc[:,1:]
+DIGITO = col_mas_norma2[0]
+
+model = KNeighborsClassifier(n_neighbors = k) # modelo en abstracto
+model.fit(PIXELES, DIGITO) # entreno el modelo con los datos PIXELES y DIGITO
+PREDICCIONES = model.predict(PIXELES) # me fijo qué clases les asigna el modelo a mis datos
+print('----------------\nPrecision: \n')
+print(metrics.accuracy_score(DIGITO, PREDICCIONES))
+print('----------------\nMatriz de confusion\n')
+print(metrics.confusion_matrix(DIGITO, PREDICCIONES))
+print('----------------\n')
+
+
+
 
 #--------------------------------------------------------------------------------
 
@@ -306,10 +354,13 @@ n=3
 # el de columnas al azar lo genero dentro del ciclo, para poder analizar mejor el "azar".
 # se generara un nuevo DF de columnas al azar por cada iteracion dada por 'Nrep'.
 
+
 col_menos_ceros = n_col_menos_ceros(img_0_1,n)
 col_equi_dist = n_col_equi_dist(img_0_1,n)
 col_mas_253 = n_col_mas_253(img_0_1,n)
 col_mas_255 = n_col_mas_255(img_0_1,n)
+col_mas_var = n_col_mas_var(img_0_1,n)
+col_mas_norma2 = n_col_mas_norma2(img_0_1,n)
 
 PIXELES_equi = col_equi_dist.iloc[:,1:]
 DIGITO_equi = col_equi_dist[0]
@@ -319,10 +370,14 @@ PIXELES_253 = col_mas_253.iloc[:,1:]
 DIGITO_253 = col_mas_253[0]
 PIXELES_255 = col_mas_255.iloc[:,1:]
 DIGITO_255 = col_mas_255[0]
+PIXELES_var = col_mas_var.iloc[:,1:]
+DIGITO_var = col_mas_var[0]
+PIXELES_norma2 = col_mas_norma2.iloc[:,1:]
+DIGITO_norma2 = col_mas_norma2[0]
 
 
-Nrep = 0
-valores_k = range(1, 20)
+Nrep = 3
+valores_k = range(1, 10)
 
 #resultados_test_azar = np.zeros((Nrep, len(valores_k)))
 #resultados_train_azar = np.zeros((Nrep, len(valores_k)))
@@ -334,6 +389,8 @@ resultados_test_253 = np.zeros((Nrep, len(valores_k)))
 #resultados_train_253 = np.zeros((Nrep, len(valores_k)))
 resultados_test_255 = np.zeros((Nrep, len(valores_k)))
 #resultados_train_255 = np.zeros((Nrep, len(valores_k)))
+resultados_test_var = np.zeros((Nrep, len(valores_k)))
+resultados_test_norma2 = np.zeros((Nrep, len(valores_k)))
 
 
 for i in range(Nrep):
@@ -345,6 +402,8 @@ for i in range(Nrep):
     X_train_ceros, X_test_ceros, Y_train_ceros, Y_test_ceros = train_test_split(PIXELES_ceros,DIGITO_ceros, test_size = 0.3)
     X_train_253, X_test_253, Y_train_253, Y_test_253 = train_test_split(PIXELES_253,DIGITO_253, test_size = 0.3)
     X_train_255, X_test_255, Y_train_255, Y_test_255 = train_test_split(PIXELES_255,DIGITO_255, test_size = 0.3)
+    X_train_var, X_test_var, Y_train_var, Y_test_var = train_test_split(PIXELES_var,DIGITO_var, test_size = 0.3)
+    X_train_norma2, X_test_norma2, Y_train_norma2, Y_test_norma2 = train_test_split(PIXELES_norma2,DIGITO_norma2, test_size = 0.3)
     for k in valores_k:
 #        # modelo para columnas al azar
 #        model_azar = KNeighborsClassifier(n_neighbors = k)
@@ -396,6 +455,28 @@ for i in range(Nrep):
         resultados_test_255[i, k-1] = precision_test_255
 #        resultados_train_255[i, k-1] = precision_train_255
 
+        #modelo para columnas con mas var
+        model_var = KNeighborsClassifier(n_neighbors = k)
+        model_var.fit(X_train_var, Y_train_var)
+        predicciones_test_var = model_var.predict(X_test_var)
+#        predicciones_train_var = model.predict(X_train)
+        precision_test_var = metrics.accuracy_score(Y_test_var, predicciones_test_var)
+#        precision_train_var = metrics.accuracy_score(Y_train_var, predicciones_train_var)
+        resultados_test_var[i, k-1] = precision_test_var
+#        resultados_train_var[i, k-1] = precision_train_var
+        
+        #modelo para columnas con mas norma2
+        model_norma2 = KNeighborsClassifier(n_neighbors = k)
+        model_norma2.fit(X_train_norma2, Y_train_norma2)
+        predicciones_test_norma2 = model_norma2.predict(X_test_norma2)
+#        predicciones_train_norma2 = model.predict(X_train)
+        precision_test_norma2 = metrics.accuracy_score(Y_test_norma2, predicciones_test_norma2)
+#        precision_train_norma2 = metrics.accuracy_score(Y_train_norma2, predicciones_train_norma2)
+        resultados_test_norma2[i, k-1] = precision_test_norma2
+#        resultados_train_norma2[i, k-1] = precision_train_norma2
+
+
+
 #%%
 
 #promedios_train_azar = np.mean(resultados_train_azar, axis = 0)
@@ -408,6 +489,8 @@ promedios_test_ceros = np.mean(resultados_test_ceros, axis = 0)
 promedios_test_253 = np.mean(resultados_test_253, axis = 0)
 #promedios_train_255 = np.mean(resultados_train_255, axis = 0)
 promedios_test_255 = np.mean(resultados_test_255, axis = 0)
+promedios_test_var = np.mean(resultados_test_var, axis = 0)
+promedios_test_norma2 = np.mean(resultados_test_norma2, axis = 0)
 #%%
 
 #plt.plot(valores_k, promedios_test_azar, label = 'Columnas al azar')
@@ -415,6 +498,8 @@ plt.plot(valores_k, promedios_test_equi, label = 'Columnas equidistantes')
 plt.plot(valores_k, promedios_test_ceros, label = 'Columnas con menos ceros')
 plt.plot(valores_k, promedios_test_253, label = 'Columnas con mas 253')
 plt.plot(valores_k, promedios_test_255, label = 'Columnas con mas 255')
+plt.plot(valores_k, promedios_test_var, label = 'Columnas con mas var')
+plt.plot(valores_k, promedios_test_norma2, label = 'Columnas con mas norma2')
 plt.legend()
 plt.title('Exactitud del modelo de knn con ' + str(n) + ' columnas')
 plt.xlabel('Cantidad de vecinos')
@@ -427,29 +512,27 @@ plt.show()
 # buscaremos la mejor combinacion entre cantidad de columnas y cantidad de vecinos y veremos las relaciones a partir de un mapa de calor
 # a la funcion se le pasa el DF de las imagenes, la lista de cantidades de columnas, la cantidad de vecinos, la cantidad de iteraciones de testeo
 
-def mejor_modelo_255(img_0_1,columnas,k,i):
-    n_columnas = columnas
+def mejor_modelo_255(imagenes,n_columnas,k,i_rep):
     k_vecinos = np.arange(1,k)
-    i_rep = i
     
-    resultados_test_255 = np.zeros((i_rep,len(n_columnas), len(valores_k)))
+    resultados_test_255 = np.zeros((i_rep,len(n_columnas), len(k_vecinos)))
     
     j = -1  # lo voy a usar para asignar en la posicion j de la matriz
     for n in n_columnas:
         j += 1
-        col_mas_255 = n_col_mas_255(img_0_1,n)
-        PIXELES_255 = col_mas_255.iloc[:,1:]
-        DIGITO_255 = col_mas_255[0]
+        col_mas_var = n_col_mas_var(imagenes,n)
+        PIXELES_var = col_mas_var.iloc[:,1:]
+        DIGITO_var = col_mas_var[0]
         for i in range(i_rep):
-            X_train_255, X_test_255, Y_train_255, Y_test_255 = train_test_split(PIXELES_255,DIGITO_255, test_size = 0.3)
+            X_train_var, X_test_var, Y_train_var, Y_test_var = train_test_split(PIXELES_var,DIGITO_var, test_size = 0.3)
             for k in k_vecinos:
-                model_255 = KNeighborsClassifier(n_neighbors = k)
-                model_255.fit(X_train_255, Y_train_255)
-                predicciones_test_255 = model_255.predict(X_test_255)
-                precision_test_255 = metrics.accuracy_score(Y_test_255, predicciones_test_255)
-                resultados_test_255[i,j,k-1] = precision_test_255
+                model_var = KNeighborsClassifier(n_neighbors = k)
+                model_var.fit(X_train_var, Y_train_var)
+                predicciones_test_var = model_var.predict(X_test_var)
+                precision_test_var = metrics.accuracy_score(Y_test_var, predicciones_test_var)
+                resultados_test_var[i,j,k-1] = precision_test_var
 
-    promedio_precisiones = np.mean(resultados_test_255,axis=0)
+    promedio_precisiones = np.mean(resultados_test_var,axis=0)
 
     mayor_precision = np.max(promedio_precisiones)
     print('\nMayor precision alcanzada: ',mayor_precision)
@@ -459,15 +542,15 @@ def mejor_modelo_255(img_0_1,columnas,k,i):
     print('Cantidad de columnas: ',n_columnas[columnas_mayor_precision],'\nCantidad de vecinos: ',vecinos_mayor_precision+1)
 
     # hago modelo con esos parametros para ver la matriz de confusion
-    col_mas_255 = n_col_mas_255(img_0_1,n_columnas[columnas_mayor_precision])
-    PIXELES_255 = col_mas_255.iloc[:,1:]
-    DIGITO_255 = col_mas_255[0]
-    X_train_255, X_test_255, Y_train_255, Y_test_255 = train_test_split(PIXELES_255,DIGITO_255, test_size = 0.3)
-    model_255 = KNeighborsClassifier(n_neighbors = vecinos_mayor_precision+1)
-    model_255.fit(X_train_255, Y_train_255)
-    predicciones_test_255 = model_255.predict(X_test_255)
-    print('\nMatriz de confusion para esos parametros:\n',metrics.confusion_matrix(Y_test_255,predicciones_test_255))
-    print('\nPrecision: ',metrics.accuracy_score(Y_test_255,predicciones_test_255),'\n')
+    col_mas_var = n_col_mas_var(img_0_1,n_columnas[columnas_mayor_precision])
+    PIXELES_var = col_mas_var.iloc[:,1:]
+    DIGITO_var = col_mas_var[0]
+    X_train_var, X_test_var, Y_train_var, Y_test_var = train_test_split(PIXELES_var,DIGITO_var, test_size = 0.3)
+    model_var = KNeighborsClassifier(n_neighbors = vecinos_mayor_precision+1)
+    model_var.fit(X_train_var, Y_train_var)
+    predicciones_test_var = model_var.predict(X_test_var)
+    print('\nMatriz de confusion para esos parametros:\n',metrics.confusion_matrix(Y_test_var,predicciones_test_var))
+    print('\nPrecision: ',metrics.accuracy_score(Y_test_var,predicciones_test_var),'\n')
 
 
     sns.heatmap(promedio_precisiones, xticklabels=k_vecinos, yticklabels=n_columnas)
@@ -504,6 +587,7 @@ def knn_255(img,cant_columnas,k_vecinos,funcion_columnas):
 # funcion que grafica la relacion entre la cantidad de columnas y la precision, pasandole tambien
 # como parametro a la funcion con la que se seleccionan las columnas (azar, menos ceros, mas cantidad de 255,...)
 # las columnas se pasan en forma de lista, cada elemento es una cantidad de columnas a analizar
+# se pasa una lista con la cantidad de vecinos a probar
 
 def relacion_cant_columnas_precision(img,cant_columnas,funcion_columnas,k_vecinos):
     for k in k_vecinos:
