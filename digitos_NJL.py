@@ -22,6 +22,9 @@ from sklearn import tree
 
 df_img = pd.read_csv('mnist_desarrollo.csv',header=None)
 df_img.columns = range(df_img.shape[1])
+test = pd.read_csv('mnist_test.csv',header=None)
+test.columns = range(test.shape[1])
+
 
 #%%
 #==================================================================================
@@ -81,6 +84,7 @@ print('\n====================================================\nEJERCICIO 2\n====
 #--------------------------------------------------------------------------------
 
 img_0_1 = df_img[(df_img[0] == 0) | (df_img[0] == 1)]
+test_0_1 = test[(test[0] == 0) | (test[0] == 1)]
 
 #--------------------------------------------------------------------------------
 
@@ -196,8 +200,40 @@ def n_col_mas_norma2(img,n):
     col_mas_norma2 = img[np.insert(indices_n_columnas_mas_norma2,0,0)]    # le agrego la columna 0
     return col_mas_norma2 
 
+def distancia(df_0, df_1):
+    dist = []
+    columna = []
+    for i in range(784):
+        disti = distance.euclidean(df_0.iloc[:,i+1], df_1.iloc[:,i+1])
+        dist.append(disti)
+        columna.append(i)
+    return dist, columna
 
+def n_col_mas_dist(img, n):
+    df = dfss(img)
+    df_0 = df[0]
+    df_1 = df[1]
+    dist, columna = distancia(df_0,df_1)
+    dist01 = pd.concat([pd.Series(columna),  pd.Series(dist)], axis = 1)
+    dist01 = dist01.sort_values(1,ascending=False)
+    col_mas_distancia = img[np.insert(np.array(dist01.iloc[:n,0]),0,0)]
+    return col_mas_distancia
 
+def n_col_mayor_dist_0_1(img,n):
+    img_0 = np.mean(img[img[0] == 0],axis=0)
+    img_1 = np.mean(img[img[0] == 1],axis=0)
+    mayores_distancias = pd.Series(np.zeros(784))
+    for i in range(1,785):
+        distancia_i = 0
+        for j in range(1,785):
+            distancia = abs(img_0[i] - img_1[j])
+            if img_0[i] > 250 and distancia > distancia_i:
+                distancia_i = distancia
+        mayores_distancias[i-1] = distancia_i
+    col_mayor_dist_0_1 = img[np.insert((mayores_distancias.sort_values(ascending=False).index + 1)[0:n],0,0)]
+    return col_mayor_dist_0_1
+
+    
 #--------------------------------------------------------------------------------
 #%%
 
@@ -211,6 +247,7 @@ col_mas_253 = n_col_mas_253(img_0_1,n)
 col_mas_255 = n_col_mas_255(img_0_1,n)
 col_mas_var = n_col_mas_var(img_0_1,n)
 col_mas_norma2 = n_col_mas_norma2(img_0_1,n)
+col_mayor_dist_0_1 = n_col_mayor_dist_0_1(img_0_1,n)
 
 k = 5
 
@@ -328,6 +365,23 @@ print('----------------\nMatriz de confusion\n')
 print(metrics.confusion_matrix(DIGITO, PREDICCIONES))
 print('----------------\n')
 
+#--------------------------------------------------------------------------------
+
+print('=========================\nEntrenamiento KNN con columnas de mayor distancia entre los promedios 0 y 1\n=========================')
+
+PIXELES = col_mayor_dist_0_1.iloc[:,1:]
+DIGITO = col_mayor_dist_0_1[0]
+
+model = KNeighborsClassifier(n_neighbors = k) # modelo en abstracto
+model.fit(PIXELES, DIGITO) # entreno el modelo con los datos PIXELES y DIGITO
+PREDICCIONES = model.predict(PIXELES) # me fijo qué clases les asigna el modelo a mis datos
+print('----------------\nPrecision: \n')
+print(metrics.accuracy_score(DIGITO, PREDICCIONES))
+print('----------------\nMatriz de confusion\n')
+print(metrics.confusion_matrix(DIGITO, PREDICCIONES))
+print('----------------\n')
+
+
 
 
 
@@ -375,7 +429,7 @@ def mejor_seleccion_columnas(imagenes,cant_columnas,tuplas_funciones,k_vecinos,i
     plt.show()
 
 
-tuplas_funciones = [('Columnas  mas 255',n_col_mas_255),('Columnas menos ceros',n_col_menos_ceros),('Columnas mas varianza',n_col_mas_var)]
+tuplas_funciones = [('Columnas  mas 255',n_col_mas_255),('Columnas menos ceros',n_col_menos_ceros),('Columnas mas varianza',n_col_mas_var),('Columnas mas distancia',n_col_mayor_dist_0_1)]
 
 #mejor_seleccion_columnas(img_0_1,3,tuplas_funciones,10,3)
 
@@ -443,18 +497,17 @@ print('\nFuncion mejor_modelo_255(img_0_1,columnas,k,i)')
 # la cantidad de vecinos, y la funcion con la que se seleccionan la cantidad de columnas (azar, menos ceros, mas cantidad de 255,...)
 # la cantidad de columnas es fija
 
-def knn_255(img,cant_columnas,k_vecinos,funcion_columnas):
+def knn_train(img,cant_columnas,k_vecinos,funcion_columnas):
     img_columnas_selec = funcion_columnas(img,cant_columnas)
     PIXELES = img_columnas_selec.iloc[:,1:]
     DIGITO = img_columnas_selec[0]
-    PIXELES_train, PIXELES_test, DIGITO_train, DIGITO_test = train_test_split(PIXELES,DIGITO, test_size = 0.3)
     model = KNeighborsClassifier(n_neighbors = k_vecinos)
-    model.fit(PIXELES_train, DIGITO_train)
-    PREDICCIONES = model.predict(PIXELES_test)
+    model.fit(PIXELES, DIGITO)
+    PREDICCIONES = model.predict(PIXELES)
     print('----------------\nPrecision: \n')
-    print(metrics.accuracy_score(DIGITO_test, PREDICCIONES))
+    print(metrics.accuracy_score(DIGITO, PREDICCIONES))
     print('----------------\nMatriz de confusion\n')
-    print(metrics.confusion_matrix(DIGITO_test, PREDICCIONES))
+    print(metrics.confusion_matrix(DIGITO, PREDICCIONES))
     print('----------------\n')
     return model
 
@@ -624,7 +677,7 @@ def mejor_seleccion_columnas_arbol(imagenes,cant_columnas,tuplas_funciones,profu
 
 tuplas_funciones = [('Columnas  mas 255',n_col_mas_255),('Columnas menos ceros',n_col_menos_ceros),('Columnas mas varianza',n_col_mas_var)]
 
-mejor_seleccion_columnas_arbol(img_0_1,3,tuplas_funciones,np.arange(1,15),3)
+#mejor_seleccion_columnas_arbol(img_0_1,3,tuplas_funciones,np.arange(1,15),3)
 
 print('\nFuncion: mejor_seleccion_columnas_arbol(imagenes,cant_columnas,tuplas_funciones,profundidades,i_rep)')
 
