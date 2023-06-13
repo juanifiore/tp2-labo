@@ -16,6 +16,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
 from sklearn import tree
+from scipy.spatial import distance
+
 
 
 #%%
@@ -186,13 +188,13 @@ def n_col_mas_255(img,n):
     cantidades_de_255 = (img.iloc[:,1:]==255).sum()
     indices_n_columnas_mas_255 = cantidades_de_255.sort_values(ascending=False).index[:n]
     col_mas_255 = img[np.insert(indices_n_columnas_mas_255,0,0)]    # le agrego la columna 0
-    return col_mas_255
+    return col_mas_255,np.insert(indices_n_columnas_mas_255,0,0)
 
 def n_col_mas_var(img,n):
     varianzas = np.var(img, axis=0)
     indices_n_columnas_mas_var = varianzas.sort_values(ascending=False).index[:n]
     col_mas_var = img[np.insert(indices_n_columnas_mas_var,0,0)]    # le agrego la columna 0
-    return col_mas_var 
+    return col_mas_var,np.insert(indices_n_columnas_mas_var,0,0) 
 
 def n_col_mas_norma2(img,n):
     norma2 = np.linalg.norm(img, axis=0)
@@ -209,6 +211,16 @@ def distancia(df_0, df_1):
         columna.append(i)
     return dist, columna
 
+def dfss(df_img):
+    dfs = []
+    for i in range(len(np.array(df_img.iloc[:,0].value_counts()))):
+        filtro_i = (df_img[0]==i)
+        df_i = df_img[filtro_i]
+        # recorto:
+        df_i = df_i.iloc[0:5420,:]
+        dfs.append(df_i)
+    return dfs
+
 def n_col_mas_dist(img, n):
     df = dfss(img)
     df_0 = df[0]
@@ -217,21 +229,17 @@ def n_col_mas_dist(img, n):
     dist01 = pd.concat([pd.Series(columna),  pd.Series(dist)], axis = 1)
     dist01 = dist01.sort_values(1,ascending=False)
     col_mas_distancia = img[np.insert(np.array(dist01.iloc[:n,0]),0,0)]
-    return col_mas_distancia
+    return col_mas_distancia,np.insert(np.array(dist01.iloc[:n,0]),0,0)
 
 def n_col_mayor_dist_0_1(img,n):
     img_0 = np.mean(img[img[0] == 0],axis=0)
     img_1 = np.mean(img[img[0] == 1],axis=0)
-    mayores_distancias = pd.Series(np.zeros(784))
+    mayores_distancias = pd.Series(0,index=range(1,785))
     for i in range(1,785):
-        distancia_i = 0
-        for j in range(1,785):
-            distancia = abs(img_0[i] - img_1[j])
-            if img_0[i] > 250 and distancia > distancia_i:
-                distancia_i = distancia
-        mayores_distancias[i-1] = distancia_i
+        distancia = abs(img_0[i] - img_1[i])
+        mayores_distancias[i] = distancia
     col_mayor_dist_0_1 = img[np.insert((mayores_distancias.sort_values(ascending=False).index + 1)[0:n],0,0)]
-    return col_mayor_dist_0_1
+    return col_mayor_dist_0_1,np.insert((mayores_distancias.sort_values(ascending=False).index + 1)[0:n],0,0)
 
     
 #--------------------------------------------------------------------------------
@@ -244,10 +252,11 @@ col_al_azar = n_col_al_azar(img_0_1,n)
 col_menos_ceros = n_col_menos_ceros(img_0_1,n)
 col_equi_dist = n_col_equi_dist(img_0_1,n)
 col_mas_253 = n_col_mas_253(img_0_1,n)
-col_mas_255 = n_col_mas_255(img_0_1,n)
-col_mas_var = n_col_mas_var(img_0_1,n)
+col_mas_255,_ = n_col_mas_255(img_0_1,n)
+col_mas_var,_ = n_col_mas_var(img_0_1,n)
 col_mas_norma2 = n_col_mas_norma2(img_0_1,n)
-col_mayor_dist_0_1 = n_col_mayor_dist_0_1(img_0_1,n)
+col_mayor_dist_0_1,_ = n_col_mayor_dist_0_1(img_0_1,n)
+col_mas_dist,_ = n_col_mas_dist(img_0_1,n)
 
 k = 5
 
@@ -406,7 +415,7 @@ def mejor_seleccion_columnas(imagenes,cant_columnas,tuplas_funciones,k_vecinos,i
     valores_k = range(1,k_vecinos)
 
     for funcion in tuplas_funciones:
-        columnas_selec = funcion[1](imagenes,cant_columnas)
+        columnas_selec,_ = funcion[1](imagenes,cant_columnas)
         PIXELES = columnas_selec.iloc[:,1:]
         DIGITO = columnas_selec[0]
         resultados_test = np.zeros((i_rep, len(valores_k)))
@@ -441,33 +450,36 @@ print('mejor_seleccion_columnas(imagenes,cant_columnas,tuplas_funciones,k_vecino
 # buscaremos la mejor combinacion entre cantidad de columnas y cantidad de vecinos y veremos las relaciones a partir de un mapa de calor
 # a la funcion se le pasa el DF de las imagenes, la lista de cantidades de columnas, la cantidad de vecinos, la cantidad de iteraciones de testeo
 
-def mejor_modelo_255(imagenes,n_columnas,k,i_rep):
+def mejor_modelo_255(imagenes,n_columnas,k,i_rep,funcion_columnas,nombre_funcion):
     k_vecinos = np.arange(1,k)
     
-    resultados_test_255 = np.zeros((i_rep,len(n_columnas), len(k_vecinos)))
+    resultados_test = np.zeros((i_rep,len(n_columnas), len(k_vecinos)))
     
     j = -1  # lo voy a usar para asignar en la posicion j de la matriz
+
+    np.random.seed(123)
+
     for n in n_columnas:
         j += 1
-        col_mas_var = n_col_mas_var(imagenes,n)
-        PIXELES_var = col_mas_var.iloc[:,1:]
-        DIGITO_var = col_mas_var[0]
+        col_selec,_ = funcion_columnas(imagenes,n)
+        PIXELES = col_selec.iloc[:,1:]
+        DIGITO = col_selec[0]
         for i in range(i_rep):
-            X_train_var, X_test_var, Y_train_var, Y_test_var = train_test_split(PIXELES_var,DIGITO_var, test_size = 0.3)
+            X_train, X_test, Y_train, Y_test = train_test_split(PIXELES,DIGITO, test_size = 0.3,stratify=DIGITO)
             for k in k_vecinos:
-                model_var = KNeighborsClassifier(n_neighbors = k)
-                model_var.fit(X_train_var, Y_train_var)
-                predicciones_test_var = model_var.predict(X_test_var)
-                precision_test_var = metrics.accuracy_score(Y_test_var, predicciones_test_var)
-                resultados_test_var[i,j,k-1] = precision_test_var
+                model = KNeighborsClassifier(n_neighbors = k)
+                model.fit(X_train, Y_train)
+                predicciones_test = model.predict(X_test)
+                precision_test = metrics.accuracy_score(Y_test, predicciones_test)
+                resultados_test[i,j,k-1] = precision_test
 
-    promedio_precisiones = np.mean(resultados_test_var,axis=0)
+    promedio_precisiones = np.mean(resultados_test,axis=0)
 
     mayor_precision = np.max(promedio_precisiones)
     print('\nMayor precision alcanzada: ',mayor_precision)
     print()
     columnas_mayor_precision,vecinos_mayor_precision = np.unravel_index(np.argmax(promedio_precisiones), promedio_precisiones.shape)
-    print('Mejor combinacion entre cantidad de columnas y vecinos:\n')
+    print('Mejor combinacion entre cantidad de columnas y vecinos, para funcion ',nombre_funcion)
     print('Cantidad de columnas: ',n_columnas[columnas_mayor_precision],'\nCantidad de vecinos: ',vecinos_mayor_precision+1)
 
     # hago modelo con esos parametros para ver la matriz de confusion
@@ -485,7 +497,7 @@ def mejor_modelo_255(imagenes,n_columnas,k,i_rep):
     sns.heatmap(promedio_precisiones, xticklabels=k_vecinos, yticklabels=n_columnas)
     plt.xlabel('Cantidad de vecinos')
     plt.ylabel('Cantidad de columnas')
-    plt.title('Precision del modelo para diferentes combinaciones de columnas y vecinos')
+    plt.title('Precision del modelo para diferentes combinaciones de columnas y vecinos, columnas: '+nombre_funcion)
     plt.show()
 
 #    return resultados_test_255
@@ -497,17 +509,19 @@ print('\nFuncion mejor_modelo_255(img_0_1,columnas,k,i)')
 # la cantidad de vecinos, y la funcion con la que se seleccionan la cantidad de columnas (azar, menos ceros, mas cantidad de 255,...)
 # la cantidad de columnas es fija
 
-def knn_train(img,cant_columnas,k_vecinos,funcion_columnas):
-    img_columnas_selec = funcion_columnas(img,cant_columnas)
+def knn_train(img,test,cant_columnas,k_vecinos,funcion_columnas):
+    img_columnas_selec,indices = funcion_columnas(img,cant_columnas)
+    PIXELES_test = test[indices].iloc[:,1:]
+    DIGITO_test = test[0]
     PIXELES = img_columnas_selec.iloc[:,1:]
     DIGITO = img_columnas_selec[0]
     model = KNeighborsClassifier(n_neighbors = k_vecinos)
     model.fit(PIXELES, DIGITO)
-    PREDICCIONES = model.predict(PIXELES)
+    PREDICCIONES = model.predict(PIXELES_test)
     print('----------------\nPrecision: \n')
-    print(metrics.accuracy_score(DIGITO, PREDICCIONES))
+    print(metrics.accuracy_score(DIGITO_test, PREDICCIONES))
     print('----------------\nMatriz de confusion\n')
-    print(metrics.confusion_matrix(DIGITO, PREDICCIONES))
+    print(metrics.confusion_matrix(DIGITO_test, PREDICCIONES))
     print('----------------\n')
     return model
 
