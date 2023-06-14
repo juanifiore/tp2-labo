@@ -673,6 +673,8 @@ print('\nTesteo criterio mayor distancia, 35 pixeles y 7 vecinos\n')
 knn_train(img_0_1,test,35,7,n_col_mas_dist)
 print('\nTesteo criterio mas 255, 78 pixeles y 1 vecinos\n')
 knn_train(img_0_1,test,78,1,n_col_mas_255)
+print('\nTesteo criterio mas varianza, 35 pixeles y 2 vecinos\n')
+knn_train(img_0_1,test,35,2,n_col_mas_255)
 
 
 #%%
